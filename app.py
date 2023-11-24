@@ -1,4 +1,4 @@
-from flask import Flask, render_template, flash, request
+from flask import Flask, render_template, flash, request, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, BooleanField, ValidationError
 from wtforms.validators import DataRequired, EqualTo, Length
@@ -29,7 +29,7 @@ class Posts(db.Model):
   title = db.Column(db.String(255))
   content = db.Column(db.Text)
   author = db.Column(db.String(255))
-  date_post = db.Column(db.DateTime, default = datetime.utcnow)
+  date_posted = db.Column(db.DateTime, default = datetime.utcnow)
   slug = db.Column(db.String(255))
 
 #create user model
@@ -63,6 +63,7 @@ class PostForm(FlaskForm):
   slug = StringField("Slug", validators=[DataRequired()])
   submit = SubmitField("Submit")
 
+
 #create a class form 
 class PasswordForm(FlaskForm):
   email = StringField("What's your email?", validators=[DataRequired()]) 
@@ -83,6 +84,42 @@ class UserForm(FlaskForm):
   password_hash = PasswordField('Password', validators=[DataRequired(), EqualTo('password_hash2', message='Passwords must match.')])
   password_hash2 = PasswordField('Comfirm Password', validators=[DataRequired()])
   submit = SubmitField("Submit")
+
+#create individual post page
+@app.route('/posts/<int:id>')
+def post(id):
+  post = Posts.query.get_or_404(id)
+  return render_template('post.html', post = post)
+
+@app.route('/posts')
+def posts():
+  #grab all the posts form the database
+  posts = Posts.query.order_by(Posts.date_posted)
+  return render_template("posts.html",
+                         posts = posts)
+@app.route('/posts/edit/<int:id>', methods= ['POST', 'GET'])
+def edit_post(id):
+  post = Posts.query.get_or_404(id)
+  form = PostForm()
+  if form.validate_on_submit():
+    #get data to update from form
+    post.title = form.title.data
+    post.author = form.author.data
+    post.slug = form.slug.data
+    post.content = form.content.data
+    #update database
+    db.session.add(post)
+    db.session.commit()
+    flash("Post has been updated!")
+    return redirect(url_for('post',id = post.id))
+  #fill the form from data fromd database
+  form.title.data = post.title
+  form.author.data = post.author
+  form.slug.data = post.slug
+  form.content.data = post.content
+  return render_template('edit_post.html', form = form)
+
+  
 #create a post page
 @app.route('/add-post', methods=['GET', 'POST'])
 def add_post():
