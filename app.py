@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 from datetime import datetime
 from werkzeug.security import generate_password_hash,check_password_hash
 from wtforms.widgets import TextArea
+from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 
 #create a flask instance 
 app = Flask(__name__)
@@ -23,6 +24,22 @@ db = SQLAlchemy(app)
 migrate = Migrate(app,db)
 
 app.app_context().push()
+
+#flask_login stuff
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+  return Users.query.get(int(user_id))
+
+#create login form
+class loginForm(FlaskForm):
+  username = StringField("Username", validators=[DataRequired()])
+  password = PasswordField("Password", validators=[DataRequired()])
+  submit = SubmitField("Submit")
+  
 #create a post model
 class Posts(db.Model):
   id = db.Column(db.Integer, primary_key = True)
@@ -33,8 +50,9 @@ class Posts(db.Model):
   slug = db.Column(db.String(255))
 
 #create user model
-class Users(db.Model):
+class Users(db.Model, UserMixin):
   id = db.Column(db.Integer, primary_key = True)
+  username = db.Column(db.String(20), nullable = False, unique = True)
   name = db.Column(db.String(200), nullable = False)
   email = db.Column(db.String(120), nullable = False, unique = True)
   favorite_color = db.Column(db.String(200))
@@ -78,7 +96,8 @@ class NameForm(FlaskForm):
 
 #create a Form Class
 class UserForm(FlaskForm):
-  name = StringField("Name", validators=[DataRequired()]) 
+  name = StringField("Name", validators=[DataRequired()])
+  username = StringField("Username", validators=[DataRequired()]) 
   email = StringField("Email", validators=[DataRequired()]) 
   favorite_color = StringField("Favorite Color") 
   password_hash = PasswordField('Password', validators=[DataRequired(), EqualTo('password_hash2', message='Passwords must match.')])
@@ -97,6 +116,27 @@ def posts():
   posts = Posts.query.order_by(Posts.date_posted)
   return render_template("posts.html",
                          posts = posts)
+
+@app.route('/posts/delete/<int:id>')
+def delete_post(id):
+  #get the post to delete from database
+  post_to_delete = Posts.query.get_or_404(id)
+  try:
+    #delete the post from databae
+    db.session.delete(post_to_delete)
+    db.session.commit()
+    flash("Blog post was deleted!!")
+    #grab all the posts from the database
+    posts = Posts.query.order_by(Posts.date_posted)
+    return render_template("posts.html", posts = posts)
+
+  except:
+    flash("Whoops! There was a problem while deleting the post, Try again...")
+
+    posts = Posts.query.order_by(Posts.date_posted)
+    return render_template("posts.html", posts = posts)
+
+
 @app.route('/posts/edit/<int:id>', methods= ['POST', 'GET'])
 def edit_post(id):
   post = Posts.query.get_or_404(id)
@@ -210,11 +250,12 @@ def add_user():
       #hash the password!!
       # hashed_pw = generate_password_hash(form.password_hash.data, "sha256")
       hashed_pw = generate_password_hash(form.password_hash.data, method='pbkdf2:sha256')
-      user = Users(name= form.name.data, email= form.email.data, favorite_color=form.favorite_color.data, password_hash = hashed_pw)
+      user = Users(name= form.name.data,username= form.username.data, email= form.email.data, favorite_color=form.favorite_color.data, password_hash = hashed_pw)
       db.session.add(user)
       db.session.commit()
     name = form.name.data
     form.name.data = ''
+    form.username.data = ''
     form.email.data = ''
     form.favorite_color = ''
     form.password_hash = ''
@@ -225,6 +266,40 @@ def add_user():
                          form = form,
                          name = name,
                          our_users = our_users)
+
+  
+#create login page
+@app.route('/login', methods = ['POST','GET'])
+def login():
+  form = loginForm()
+  if form.validate_on_submit():
+    #get the user by unique username
+    user = Users.query.filter_by(username = form.username.data).first()
+    if user:
+      #check the password after hashing with hashed passsword
+      if check_password_hash(user.password_hash,form.password.data):
+        login_user(user)
+        flash("Login successful!!")
+        return redirect(url_for('dashboard'))
+      else:
+        flash("Wrong password - Try again!!!")
+    else:
+      flash("That user doesn't exit!!")
+  return render_template('login.html', form = form)
+
+#create logout page
+@app.route('/logout', methods = ['GET','POST'])
+@login_required
+def logout():
+  logout_user()
+  flash('You have been logged out!!')
+  return redirect(url_for('login'))
+
+#create dashboard page
+@app.route('/dashboard', methods = ['GET', 'POST'])
+@login_required
+def dashboard():
+  return render_template('dashboard.html')
 
 #create a route decorator 
 @app.route('/')
