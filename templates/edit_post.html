@@ -15,10 +15,10 @@
         {{ form.title.label(class="form-label") }}
         {{ form.title(class="form-control") }}
         <br/>
-  
+<!--   
         {{ form.author.label(class="form-label") }}
         {{ form.author(class="form-control") }}
-        <br/>
+        <br/> -->
   
         {{ form.slug.label(class="form-label") }}
         {{ form.slug(class="form-control") }}
@@ -32,7 +32,8 @@
 
         <a href="{{url_for('posts')}}" class="btn btn-outline-secondary btn-sm">Back to Blog</a>
       </form>
-      
+      {{ ckeditor.load() }}
+      {{ ckeditor.config(name='content') }}
     </div>
     
 

@@ -17,28 +17,47 @@
     </div>
     <div class="card-body">
       <h5 class="card-title">Welcome to your user daxhboard!!</h5>
-      <p class="card-text">
-        <strong>Name:</strong>
-        {{ current_user.name}} <br/>
+      
+        <div class="container">
+          <div class="row">
+            <div class="col-8">
+              <p class="card-text">
+                <strong>Name:</strong>
+                {{ current_user.name}} <br/>
 
-        <strong>Username:</strong>
-        {{ current_user.username}} <br/>
+                <strong>Username:</strong>
+                {{ current_user.username}} <br/>
 
-        <strong>Email:</strong>
-        {{ current_user.email}} <br/>
+                <strong>UserId:</strong>
+                {{ current_user.id}} <br/>
 
-        <strong>Favorite Color:</strong>
-        {{ current_user.favorite_color}} <br/>
+                <strong>Email:</strong>
+                {{ current_user.email}} <br/>
 
-        <strong>Date Joined:</strong>
-        {{ current_user.date_added}} <br/>
-      </p>
-      <a href="{{url_for('logout')}}" class="btn btn-secondary btn-sm">Logout</a>
+                <strong>Favorite Color:</strong>
+                {{ current_user.favorite_color}} <br/>
 
-      <a href="/update/{{current_user.id }}" class="btn btn-secondary btn-sm">Update Profile</a>
+                <strong>About Author:</strong>
+                {{ current_user.about_author}} <br/>
 
-      <a class="btn btn-danger btn-sm" href="{{url_for('delete', id=current_user.id) }}">Delete</a>
+                <strong>Date Joined:</strong>
+                {{ current_user.date_added}} <br/>
+              </p>
+              <a href="{{url_for('logout')}}" class="btn btn-secondary btn-sm">Logout</a>
 
+              <a href="/update/{{current_user.id }}" class="btn btn-secondary btn-sm">Update Profile</a>
+
+              <a class="btn btn-danger btn-sm" href="{{url_for('delete', id=current_user.id) }}">Delete</a>
+              <br/><br/><br/>
+
+            </div>
+            <div class="col-4">
+              <img src="{{url_for('static',filename = 'images/pp.jpg')}}" width="150" align = "right">
+            </div>
+          </div>
+        </div>
+    
+      
     </div>
   </div>
   <br/>
@@ -65,6 +84,15 @@
         {{ form.favorite_color.label(class="form-label") }}
         {{ form.favorite_color(class="form-control", value=name_to_update.favorite_color) }}
         <br/>
+
+        {{ form.about_author.label(class="form-label") }}
+        {{ form.about_author(class="form-control", value=name_to_update.about_author) }}
+        <br/>
+
+        {{ form.profile_pic.label(class="form-label") }}
+        {{ form.profile_pic(class="form-control", value=name_to_update.profile_pic) }}
+        <br/>
+
         {{ form.submit(class="btn btn-secondary") }}
       </form>
     </div>
